@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Actividad {
+model Actividades {
   id_actividad  Int         @id @default(autoincrement())
   descripcion   String?     @db.VarChar(200)
   fecha         DateTime?
@@ -19,25 +19,25 @@ model Actividad {
   @@index([productiva], name: "actividad_seguimiento")
 }
 
-model Ambiente {
+model Ambientes {
   id_ambiente  Int        @id @default(autoincrement())
   nombre_amb   String?    @db.VarChar(80)
   municipio    Int?
   sede         Sede?
   estado       Estado?
-  municipio_fk Municipio? @relation(fields: [municipio], references: [id_municipio])
-  Horario      Horario[]
+  municipio_fk Municipios? @relation(fields: [municipio], references: [id_municipio])
+  Horario      Horarios[]
 
   @@index([municipio], name: "municipio_ambiente")
 }
 
-model Area {
+model Areas {
   id_area     Int           @id @default(autoincrement())
   nombre_area String?       @db.VarChar(80)
   Vinculacion Vinculacion[]
 }
 
-model Asignacion {
+model Asignaciones {
   id_asignacion Int               @id @default(autoincrement())
   fecha_inicio  DateTime?
   fecha_fin     DateTime?
@@ -51,7 +51,7 @@ model Asignacion {
   @@index([productiva], name: "asignacion_practica")
 }
 
-model Bitacora {
+model Bitacoras {
   id_bitacora    Int             @id @default(autoincrement())
   fecha          DateTime?
   bitacora       BitacoraEnum?
@@ -59,7 +59,7 @@ model Bitacora {
   archivo        String?         @db.VarChar(100)
   estado         EstadoBitacora?
   instructor     String?         @db.VarChar(50)
-  seguimiento_fk Seguimiento?    @relation(fields: [seguimiento], references: [id_seguimiento])
+  seguimiento_fk Seguimientos?    @relation(fields: [seguimiento], references: [id_seguimiento])
 
   @@index([seguimiento], name: "seguimiento_bitacora")
 }
@@ -72,13 +72,13 @@ model Empresa {
   correo       String?      @db.VarChar(80)
   municipio    Int?
   estado       Estado?
-  municipio_fk Municipio?   @relation(fields: [municipio], references: [id_municipio])
+  municipio_fk Municipios?   @relation(fields: [municipio], references: [id_municipio])
   Productiva   Productiva[]
 
   @@index([municipio], name: "empresa_minicipio")
 }
 
-model Ficha {
+model Fichas {
   codigo       Int          @id
   inicio_ficha DateTime?
   fin_lectiva  DateTime?
@@ -86,14 +86,14 @@ model Ficha {
   programa     Int?
   sede         Sede?
   estado       EstadoFicha?
-  programa_fk  Programa?    @relation(fields: [programa], references: [id_programa])
-  Horario      Horario[]
-  Matricula    Matricula[]
+  programa_fk  Programas?    @relation(fields: [programa], references: [id_programa])
+  Horario      Horarios[]
+  Matricula    Matriculas[]
 
   @@index([programa], name: "ficha_programa")
 }
 
-model Horario {
+model Horarios {
   id_horario     Int            @id @default(autoincrement())
   fecha_inicio   DateTime?
   hora_inicio    DateTime?      @db.Time
@@ -105,8 +105,8 @@ model Horario {
   ficha          Int?
   ambiente       Int?
   estado         EstadoHorario?
-  ambiente_fk    Ambiente?      @relation(fields: [ambiente], references: [id_ambiente])
-  ficha_fk       Ficha?         @relation(fields: [ficha], references: [codigo])
+  ambiente_fk    Ambientes?      @relation(fields: [ambiente], references: [id_ambiente])
+  ficha_fk       Fichas?         @relation(fields: [ficha], references: [codigo])
   instructor_fk  Vinculacion?   @relation(fields: [instructor], references: [id_vinculacion])
 
   @@index([ambiente], name: "hoario_ambiente")
@@ -114,7 +114,7 @@ model Horario {
   @@index([instructor], name: "vinculacion_horario")
 }
 
-model Matricula {
+model Matriculas {
   id_matricula            Int              @id @default(autoincrement())
   ficha                   Int?
   aprendiz                Int?
@@ -122,24 +122,24 @@ model Matricula {
   pendiente_tecnicos      Int?
   pendiente_transversales Int?
   pendiente_ingles        Int?
-  ficha_fk                Ficha?           @relation(fields: [ficha], references: [codigo])
-  aprendiz_fk             Persona?         @relation(fields: [aprendiz], references: [id_persona])
+  ficha_fk                Fichas?           @relation(fields: [ficha], references: [codigo])
+  aprendiz_fk             Personas?         @relation(fields: [aprendiz], references: [id_persona])
   Productiva              Productiva[]
 
   @@unique([ficha, aprendiz], name: "uiniquematricula")
   @@index([aprendiz], name: "matriculas_personas")
 }
 
-model Municipio {
+model Municipios {
   id_municipio Int        @id @default(autoincrement())
   nombre_mpio  String?    @db.VarChar(80)
   departamento String?    @db.VarChar(80)
-  Ambiente     Ambiente[]
+  Ambiente     Ambientes[]
   Empresa      Empresa[]
-  Persona      Persona[]
+  Persona      Personas[]
 }
 
-model Persona {
+model Personas {
   id_persona     Int           @id @default(autoincrement())
   identificacion BigInt?
   nombres        String?       @db.VarChar(80)
@@ -149,8 +149,8 @@ model Persona {
   rol            Rol?
   cargo          Cargo?
   municipio      Int?
-  municipio_fk   Municipio?    @relation(fields: [municipio], references: [id_municipio])
-  Matricula      Matricula[]
+  municipio_fk   Municipios?    @relation(fields: [municipio], references: [id_municipio])
+  Matricula      Matriculas[]
   Vinculacion    Vinculacion[]
 
   @@unique([identificacion], name: "identificacion_unique")
@@ -168,26 +168,26 @@ model Productiva {
   acuerdo       String?           @db.VarChar(100)
   arl           String?           @db.VarChar(100)
   consulta      String?           @db.VarChar(100)
-  matricula_fk  Matricula?        @relation(fields: [matricula], references: [id_matricula])
+  matricula_fk  Matriculas?        @relation(fields: [matricula], references: [id_matricula])
   empresa_fk    Empresa?          @relation(fields: [empresa], references: [id_empresa])
-  actividades   Actividad[]
-  Asignacion    Asignacion[]
-  Seguimiento   Seguimiento[]
+  actividades   Actividades[]
+  Asignacion    Asignaciones[]
+  Seguimiento   Seguimientos[]
 
   @@index([empresa], name: "empresa_matricula")
   @@index([matricula], name: "aprendiz_matricula")
 }
 
-model Programa {
+model Programas {
   id_programa     Int     @id @default(autoincrement())
   nombre_programa String? @db.VarChar(80)
   sigla           String? @db.VarChar(20)
   nivel           Nivel?
   estado          Estado?
-  Ficha           Ficha[]
+  Ficha           Fichas[]
 }
 
-model Seguimiento {
+model Seguimientos {
   id_seguimiento Int                @id @default(autoincrement())
   fecha          DateTime?
   seguimiento    SeguimientoEnum?
@@ -196,7 +196,7 @@ model Seguimiento {
   archivo        String?            @db.VarChar(100)
   instructor     String?            @db.VarChar(50)
   productiva_fk  Productiva?        @relation(fields: [productiva], references: [id_productiva])
-  Bitacora       Bitacora[]
+  Bitacora       Bitacoras[]
 
   @@index([productiva], name: "matricula_aprenidiz")
 }
@@ -207,10 +207,10 @@ model Vinculacion {
   tipo           Tipo?
   sede           Sede?
   area           Int?
-  area_fk        Area?        @relation(fields: [area], references: [id_area])
-  instructor_fk  Persona?     @relation(fields: [instructor], references: [id_persona])
-  Asignacion     Asignacion[]
-  Horario        Horario[]
+  area_fk        Areas?        @relation(fields: [area], references: [id_area])
+  instructor_fk  Personas?     @relation(fields: [instructor], references: [id_persona])
+  Asignacion     Asignaciones[]
+  Horario        Horarios[]
 
   @@index([instructor], name: "vinculacion_horario")
   @@index([area], name: "vinculacion_area")
