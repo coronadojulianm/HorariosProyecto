@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import Swal from 'sweetalert2'; // Importar SweetAlert2
 
 export default function RegisterPage() {
     const { register, handleSubmit, formState: { errors } } = useForm();
@@ -39,12 +40,30 @@ export default function RegisterPage() {
             const resJson = await res.json();
             console.log(resJson);
             if (res.status === 201) {
-                router.push('/auth/login');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Registro exitoso',
+                    text: 'Usuario registrado correctamente.',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        router.push('/auth/login');
+                    }
+                });
             } else {
-                console.error('Error en la respuesta del servidor:', resJson.message);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: resJson.message || 'Hubo un problema al registrar el usuario.',
+                });
             }
         } catch (error) {
             console.error('Error al enviar datos:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Hubo un problema al enviar los datos.',
+            });
         }
     });
 

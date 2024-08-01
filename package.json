@@ -20,7 +20,8 @@
     "react-hook-form": "^7.52.1",
     "styled-components": "^6.1.12",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "sweetalert2": "^11.12.4"
   },
   "devDependencies": {
     "eslint": "^8",

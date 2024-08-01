@@ -31,7 +31,7 @@ export async function POST(request) {
     });
     if (iduserFound) {
       return NextResponse.json(
-        { message: "Identificación de usuario ya registrada" }, 
+        { message: "Identificación De Usuario Ya Registrada" }, 
         { status: 400 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request) {
     });
     if (emailuserFound) {
       return NextResponse.json(
-        { message: "Correo de usuario ya registrado" }, 
+        { message: "Correo De Usuario Ya Registrado" }, 
         { status: 400 }
       );
     }
