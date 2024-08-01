@@ -10,9 +10,15 @@
   },
   "dependencies": {
     "@prisma/client": "^5.16.2",
+    "axios": "^1.7.2",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
     "next": "14.2.4",
     "react": "^18",
     "react-dom": "^18",
+    "react-hook-form": "^7.52.1",
+    "styled-components": "^6.1.12",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },

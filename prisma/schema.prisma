@@ -68,11 +68,11 @@ model Vinculacion {
 
 model Personas {
   id_persona     Int           @id @default(autoincrement())
-  identificacion BigInt
+  identificacion BigInt        @unique
   nombres        String        @db.VarChar(80)
   correo         String        @db.VarChar(80)
   telefono       String        @db.VarChar(40)
-  password       String        @db.VarChar(25)
+  password       String        @db.VarChar(60)
   rol            Rol
   cargo          Cargo
   municipio      Int
