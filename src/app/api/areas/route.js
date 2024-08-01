@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 
 export async function GET(){
     try {
-        const horarios = await prisma.horarios.findMany();
-        return NextResponse.json({data:horarios}, {status:200})
+        const areas = await prisma.areas.findMany();
+        return NextResponse.json({data:areas}, {status:200})
     } catch (error) {
         return new NextResponse(error.message,{status:500})
     }
@@ -12,10 +12,10 @@ export async function GET(){
 export async function POST(request){
     try {
         const data = await request.json()
-        const horarios = await prisma.horarios.create(({
+        const areas = await prisma.areas.create(({
             data:data
         }))
-        return new NextResponse(JSON.stringify(horarios),{
+        return new NextResponse(JSON.stringify(areas),{
             headers:{"Content-Type":"application/json"},
             status:201
         })          
