@@ -55,7 +55,7 @@ const AmbientesTable = () => {
 
     const options = {
         filterType: 'checkbox',
-        responsive: 'scroll'
+        scroll: "vertical"
     };
 
     return (

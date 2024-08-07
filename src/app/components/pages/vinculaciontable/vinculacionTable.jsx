@@ -56,7 +56,7 @@ const VinculacionTable = () => {
 
   const options = {
     filterType: "checkbox",
-    responsive: "scroll",
+    scroll: "vertical"
   };
 
   return (

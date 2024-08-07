@@ -1,6 +1,6 @@
 "use client";
 
-import Sidebar from '../../organisms/SideBar'; // Ajusta la ruta según la estructura de carpetas
+import Sidebar from '../../organisms/Sidebar'; // Ajusta la ruta según la estructura de carpetas
 import HorariosTable from '../../pages/horariostable/horariosTable'; // Ajusta la ruta según la estructura de carpetas
 
 export default function horarioTemplate() {

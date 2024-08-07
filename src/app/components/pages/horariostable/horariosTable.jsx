@@ -106,7 +106,7 @@ const HorariosTable = () => {
 
   const options = {
     filterType: "checkbox",
-    responsive: "scroll",
+    scroll: "vertical",
   };
 
   return (
