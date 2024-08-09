@@ -12,7 +12,6 @@ export default function VinculacionTemplate() {
       <main className="flex-1 h-[calc(100vh-7rem)] flex flex-col p-4">
         <div>
           <h1 className="text-black text-5xl mb-10 mt-7">Vinculaciones</h1>
-
           <div className="mb-10">
             <ModalRegArea />
             <ModalRegVinculacion />
