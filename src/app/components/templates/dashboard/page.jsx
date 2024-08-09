@@ -1,6 +1,6 @@
 "use client";
-
 import Sidebar from '../../organisms/Sidebar'; // Ajusta la ruta según la estructura de carpetas
+
 
 export default function PageDashboard() {
   return (
