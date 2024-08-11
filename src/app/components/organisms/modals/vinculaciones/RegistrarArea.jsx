@@ -16,6 +16,16 @@ export default function RegistrarArea() {
   const [nombreArea, setNombreArea] = useState("");
 
   const handleSubmit = async () => {
+    // Validación de campo vacío
+    if (!nombreArea.trim()) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Campo Vacío',
+        text: 'Por favor, ingrese un nombre para el área.',
+      });
+      return; // Detener la ejecución si el campo está vacío
+    }
+
     try {
       const response = await fetch("/api/areas", {
         method: "POST",
@@ -89,4 +99,5 @@ export default function RegistrarArea() {
     </>
   );
 }
+
 

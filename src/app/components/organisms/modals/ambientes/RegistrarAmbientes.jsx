@@ -13,45 +13,42 @@ import {
 } from "@nextui-org/react";
 import Swal from 'sweetalert2';
 
-export default function RegistrarFicha() {
+export default function RegistrarAmbiente() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [formData, setFormData] = useState({
-    codigo: "",
-    inicio_ficha: "",
-    fin_lectiva: "",
-    fin_ficha: "",
-    programa: "",
+    nombre_amb: "",
+    municipio: "",
     sede: "",
     estado: "",
   });
 
-  const [programas, setProgramas] = useState([]);
+  const [municipios, setMunicipios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
-      fetchProgramas();
+      fetchMunicipios();
     }
   }, [isOpen]);
 
-  const fetchProgramas = async () => {
+  const fetchMunicipios = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("http://localhost:3000/api/programas/");
+      const response = await fetch("http://localhost:3000/api/municipios/");
       if (!response.ok) {
-        throw new Error("Error al obtener programas");
+        throw new Error("Error al obtener municipios");
       }
       const result = await response.json();
-      if (Array.isArray(result.data)) {
-        setProgramas(result.data);
+      if (Array.isArray(result)) {
+        setMunicipios(result);
       } else {
         throw new Error("Estructura de datos inesperada");
       }
     } catch (error) {
       setError(error.message);
-      console.error("Error al cargar programas:", error);
+      console.error("Error al cargar municipios:", error);
     } finally {
       setLoading(false);
     }
@@ -72,13 +69,15 @@ export default function RegistrarFicha() {
     });
   };
 
-  const validateCodigo = (codigo) => {
-    return /^\d+$/.test(codigo);  // Verifica si el código solo contiene números
+  const validateNombreAmb = (nombre) => {
+    // Expresión regular para permitir solo letras y números
+    const regex = /^[a-zA-Z0-9\s]+$/;
+    return regex.test(nombre);
   };
 
   const handleSubmit = async () => {
     try {
-      if (!formData.codigo || !formData.inicio_ficha || !formData.fin_lectiva || !formData.fin_ficha || !formData.programa || !formData.sede || !formData.estado) {
+      if (!formData.nombre_amb || !formData.municipio || !formData.sede || !formData.estado) {
         await Swal.fire({
           title: 'Campos Vacíos',
           text: 'Por favor, complete todos los campos.',
@@ -88,47 +87,42 @@ export default function RegistrarFicha() {
         return;
       }
 
-      if (!validateCodigo(formData.codigo)) {
+      if (!validateNombreAmb(formData.nombre_amb)) {
         await Swal.fire({
-          title: 'Código Inválido',
-          text: 'El código debe contener solo números.',
+          title: 'Caracteres No Permitidos',
+          text: 'El nombre del ambiente solo debe contener letras y números.',
           icon: 'warning',
           confirmButtonText: 'OK'
         });
         return;
       }
-  
-      const getCurrentTime = () => new Date().toISOString().split('T')[1].split('.')[0];
-  
+
       const newFormData = {
-        codigo: parseInt(formData.codigo, 10),  // Convertir a entero
-        inicio_ficha: `${formData.inicio_ficha}T${getCurrentTime()}Z`,
-        fin_lectiva: `${formData.fin_lectiva}T${getCurrentTime()}Z`,
-        fin_ficha: `${formData.fin_ficha}T${getCurrentTime()}Z`,
-        programa: Number(formData.programa),
+        nombre_amb: formData.nombre_amb,
+        municipio: Number(formData.municipio),
         sede: formData.sede,
         estado: formData.estado,
       };
-  
+
       console.log("Enviando datos:", newFormData);
-  
-      const response = await fetch("http://localhost:3000/api/fichas", {
+
+      const response = await fetch("http://localhost:3000/api/ambientes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(newFormData),
       });
-  
+
       if (!response.ok) {
-        throw new Error("Error al registrar la ficha");
+        throw new Error("Error al registrar el ambiente");
       }
-  
-      const newFicha = await response.json();
-  
+
+      const newAmbiente = await response.json();
+
       Swal.fire({
         title: 'Éxito',
-        text: 'La ficha se registró correctamente.',
+        text: 'El ambiente se registró correctamente.',
         icon: 'success',
         confirmButtonText: 'OK'
       }).then((result) => {
@@ -136,81 +130,57 @@ export default function RegistrarFicha() {
           window.location.reload();
         }
       });
-  
+
       onOpenChange(false);  // Cerrar el modal después del registro
     } catch (error) {
-      console.error("Error al registrar la ficha:", error);
+      console.error("Error al registrar el ambiente:", error);
       Swal.fire({
         title: 'Error',
-        text: 'Hubo un problema al registrar la ficha.',
+        text: 'Hubo un problema al registrar el ambiente.',
         icon: 'error',
         confirmButtonText: 'OK'
       });
     }
   };
-  
+
   return (
     <>
-      <Button className="bg-lime-500 text-white ml-5" onPress={onOpen}>
-        Registrar Ficha
+      <Button className="bg-lime-500 text-white" onPress={onOpen}>
+        Registrar Ambiente
       </Button>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent>
           <>
-            <ModalHeader>Registrar Ficha</ModalHeader>
+            <ModalHeader>Registrar Ambiente</ModalHeader>
             <ModalBody>
               <Input
-                name="codigo"
-                value={formData.codigo}
+                name="nombre_amb"
+                value={formData.nombre_amb}
                 onChange={handleChange}
-                placeholder="Código"
-                label="Código"
-              />
-              <Input
-                name="inicio_ficha"
-                type="date"
-                value={formData.inicio_ficha}
-                onChange={handleChange}
-                placeholder="Inicio Ficha"
-                label="Inicio Ficha"
-              />
-              <Input
-                name="fin_lectiva"
-                type="date"
-                value={formData.fin_lectiva}
-                onChange={handleChange}
-                placeholder="Fin Lectiva"
-                label="Fin Lectiva"
-              />
-              <Input
-                name="fin_ficha"
-                type="date"
-                value={formData.fin_ficha}
-                onChange={handleChange}
-                placeholder="Fin Ficha"
-                label="Fin Ficha"
+                placeholder="Nombre del Ambiente"
+                label="Nombre del Ambiente"
               />
               <Select
-                label="Programa"
-                name="programa"
-                value={formData.programa}
-                onChange={(e) => handleSelectChange("programa", e.target.value)}
+                label="Municipio"
+                name="municipio"
+                value={formData.municipio}
+                onChange={(e) => handleSelectChange("municipio", e.target.value)}
               >
                 {loading ? (
-                  <SelectItem value="">Cargando programas...</SelectItem>
+                  <SelectItem value="">Cargando municipios...</SelectItem>
                 ) : error ? (
-                  <SelectItem value="">Error al cargar programas</SelectItem>
-                ) : programas.length > 0 ? (
-                  programas.map((programa) => (
+                  <SelectItem value="">Error al cargar municipios</SelectItem>
+                ) : municipios.length > 0 ? (
+                  municipios.map((municipio) => (
                     <SelectItem
-                      key={programa.id_programa}
-                      value={programa.id_programa.toString()}
+                      key={municipio.id_municipio}
+                      value={municipio.id_municipio.toString()}
                     >
-                      {programa.nombre_programa}
+                      {municipio.nombre_mpio}
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="">No hay programas disponibles</SelectItem>
+                  <SelectItem value="">No hay municipios disponibles</SelectItem>
                 )}
               </Select>
               <Select
@@ -232,14 +202,11 @@ export default function RegistrarFicha() {
                 value={formData.estado}
                 onChange={(e) => handleSelectChange("estado", e.target.value)}
               >
-                <SelectItem key="Lectiva" value="Lectiva">
-                  Lectiva
+                <SelectItem key="activo" value="activo">
+                  Activo
                 </SelectItem>
-                <SelectItem key="Electiva" value="Electiva">
-                  Electiva
-                </SelectItem>
-                <SelectItem key="Finalizada" value="Finalizada">
-                  Finalizada
+                <SelectItem key="inactivo" value="inactivo">
+                  Inactivo
                 </SelectItem>
               </Select>
             </ModalBody>
@@ -257,7 +224,5 @@ export default function RegistrarFicha() {
     </>
   );
 }
-
-
 
 

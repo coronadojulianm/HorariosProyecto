@@ -3,6 +3,7 @@
 import Sidebar from "../../organisms/Sidebar";
 import FichasTable from "../../pages/fichastable/fichasTable";
 import ModalRegPrograma from "../../organisms/modals/fichas/RegistrarPrograma";
+import ModalRegFicha from '../../organisms/modals/fichas/RegistrarFicha'
 
 export default function fichasTemplate() {
   return (
@@ -13,6 +14,7 @@ export default function fichasTemplate() {
           <h1 className="text-black text-5xl mb-10 mt-7">Fichas</h1>
           <div className="mb-10">
             <ModalRegPrograma />
+            <ModalRegFicha />
           </div>
           <FichasTable />
         </div>
