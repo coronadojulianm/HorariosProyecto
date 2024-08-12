@@ -229,7 +229,7 @@ export default function RegistrarHorario() {
   };
   return (
     <>
-      <Button className="bg-lime-500 text-white ml-5" onPress={onOpen}>
+      <Button className="bg-lime-500 text-white" onPress={onOpen}>
         Registrar Horario
       </Button>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>

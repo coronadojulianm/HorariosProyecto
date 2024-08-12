@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { Button } from '../atoms/buttonCerrarSesion';
-import { FaLink, FaAddressCard, FaSchool, FaRegClock, FaHome, FaSignInAlt, FaUserPlus, FaChevronLeft, FaChevronRight, FaSignOutAlt } from 'react-icons/fa';
+import { FaLink, FaAddressCard, FaSchool, FaRegClock, FaHome, FaUserPlus, FaChevronLeft, FaChevronRight, FaSignOutAlt } from 'react-icons/fa';
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { data: session } = useSession();
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+
+  const role = session?.user?.role;
 
   return (
     <aside className={`h-screen flex flex-col bg-slate-50 text-slate-800 shadow-md transition-all ${isCollapsed ? 'w-20' : 'w-72'}`}>
@@ -27,33 +30,52 @@ const Sidebar = () => {
               <FaHome className='mr-2 text-2xl' /> {!isCollapsed && 'Dashboard'}
             </Link>
           </li>
-          <li className="my-2">
-            <Link href="/components/templates/horario" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
-              <FaRegClock className='mr-2 text-2xl' /> {!isCollapsed && 'Horario'}
-            </Link>
-          </li>
-          <li className="my-2">
-            <Link href="/components/templates/ambientes" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
-              <FaSchool className='mr-2 text-2xl' /> {!isCollapsed && 'Ambientes'}
-            </Link>
-          </li>
-          <li className="my-2">
-            <Link href="/components/templates/fichas" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
-              <FaAddressCard  className='mr-2 text-2xl' /> {!isCollapsed && 'Fichas'}
-            </Link>
-          </li>
-          <li className="my-2">
-            <Link href="/components/templates/vinculacion" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
-              <FaLink className='mr-2 text-2xl' /> {!isCollapsed && 'Vinculacion'}
-            </Link>
-          </li>
-          <li className="my-2">
-            <Link href="/auth/register" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
-              <FaUserPlus className='mr-2 text-2xl' /> {!isCollapsed && 'Registro'}
-            </Link>
-          </li>
+          
+          {role === 'Coordinador' && (
+            <>
+              <li className="my-2">
+                <Link href="/components/templates/personas" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
+                  <FaUserPlus className='mr-2 text-2xl' /> {!isCollapsed && 'Personas'}
+                </Link>
+              </li>
+            </>
+          )}
+
+          {(role === 'Coordinador' || role === 'Lider') && (
+            <>
+              <li className="my-2">
+                <Link href="/components/templates/ambientes" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
+                  <FaSchool className='mr-2 text-2xl' /> {!isCollapsed && 'Ambientes'}
+                </Link>
+              </li>
+              <li className="my-2">
+                <Link href="/components/templates/fichas" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
+                  <FaAddressCard className='mr-2 text-2xl' /> {!isCollapsed && 'Fichas'}
+                </Link>
+              </li>
+              <li className="my-2">
+                <Link href="/components/templates/vinculacion" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
+                  <FaLink className='mr-2 text-2xl' /> {!isCollapsed && 'Vinculacion'}
+                </Link>
+              </li>
+              <li className="my-2">
+                <Link href="/components/templates/horario" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
+                  <FaRegClock className='mr-2 text-2xl' /> {!isCollapsed && 'Horario'}
+                </Link>
+              </li>
+            </>
+          )}
+
+          {role === 'Instructor' && (
+            <li className="my-2">
+              <Link href="/components/templates/horario" className={`block py-2 px-4 text-slate-800 hover:bg-lime-500 hover:text-white rounded-md transition-colors flex items-center mx-2 ${isCollapsed ? 'justify-center' : ''}`}>
+                <FaRegClock className='mr-2 text-2xl' /> {!isCollapsed && 'Horario'}
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
+      
       <div className="p-4 flex flex-col items-center">
         <Button 
           onClick={() => signOut()} 
@@ -73,6 +95,10 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
+
+
+
 
 
 

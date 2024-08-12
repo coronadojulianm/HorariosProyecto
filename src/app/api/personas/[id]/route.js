@@ -9,50 +9,63 @@ function serializeBigInt(obj) {
 }
 
 export async function GET(request, { params }) {
-  const id = parseInt(params.id);
+  const id = parseInt(params.id, 10); // Añadido el radix 10 para asegurar la conversión correcta
   console.log(id);
   try {
-    const personas = await prisma.personas.findFirst({
+    const persona = await prisma.personas.findUnique({
       where: { id_persona: id },
     });
-    if (!personas) {
+    if (!persona) {
       return new NextResponse(`ID "${id}" de usuario no encontrada`, { status: 404 });
     }
-    const serializedPersonas = serializeBigInt(personas);
-    return NextResponse.json(serializedPersonas);
+    const serializedPersona = serializeBigInt(persona);
+    return NextResponse.json(serializedPersona);
   } catch (error) {
+    console.error('Error fetching persona:', error); // Añadido logging para errores
     return new NextResponse(error.message, { status: 500 });
   }
 }
+
 export async function DELETE(request, { params }) {
-    const id = parseInt(params.id);
-    try {
+  const id = parseInt(params.id, 10); // Añadido el radix 10 para asegurar la conversión correcta
+  try {
     const resultado = await prisma.personas.delete({
-        where: { id_persona: id }
-        });
-        const serializedResultado = serializeBigInt(resultado);
-        return NextResponse.json({ message: "Usuario eliminado con éxito", resultado: serializedResultado }, { status: 200 });
-    } catch (error) {
-        return new NextResponse(error.message, { status: 500 });
-    }
+      where: { id_persona: id }
+    });
+    const serializedResultado = serializeBigInt(resultado);
+    return NextResponse.json({ message: "Usuario eliminado con éxito", resultado: serializedResultado }, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting persona:', error); // Añadido logging para errores
+    return new NextResponse(error.message, { status: 500 });
+  }
 }
+
 export async function PUT(request, { params }) {
-    console.log(params);
-    const id = parseInt(params.id);
-    const data = await request.json();
-    try {
-      const resultado = await prisma.personas.update({
-        where: { id_persona: id },
-        data: data
-      });
-      if (!resultado) {
-        return new NextResponse(`ID "${id}" del usuario no encontrada para actualizar`, {
-          status: 404,
-        });
-      }
-      const serializedResultado = serializeBigInt(resultado);
-      return NextResponse.json({ message: "Usuario actualizado con éxito", resultado: serializedResultado }, { status: 200 });
-    } catch (error) {
-      return new NextResponse(error.message, { status: 500 });
+  console.log('Request params:', params);
+  const id = parseInt(params.id, 10);
+  const data = await request.json();
+  console.log('Data to update:', data);
+
+  // Convertir el campo municipio a entero
+  if (data.municipio) {
+    data.municipio = parseInt(data.municipio, 10);
+  }
+
+  try {
+    const resultado = await prisma.personas.update({
+      where: { id_persona: id },
+      data: data
+    });
+    if (!resultado) {
+      return new NextResponse(`ID "${id}" del usuario no encontrada para actualizar`, { status: 404 });
     }
+    console.log('Update result:', resultado);
+    const serializedResultado = serializeBigInt(resultado);
+    return NextResponse.json({ message: "Usuario actualizado con éxito", resultado: serializedResultado }, { status: 200 });
+  } catch (error) {
+    console.error('Error updating persona:', error);
+    return new NextResponse(JSON.stringify({ error: 'Error al actualizar persona' }), { status: 500 });
+  }
 }
+
+

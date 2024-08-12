@@ -14,8 +14,15 @@ import {
 } from "@nextui-org/react";
 import Swal from "sweetalert2";
 import ActualizarHorario from "../../organisms/modals/horario/ActualizarHorario"; // Ajusta la ruta si es necesario
+import { useSession } from "next-auth/react";
+
 
 const HorariosTable = () => {
+
+    const { data: session } = useSession();
+  const userRole = session?.user?.role;
+  const userName = session?.user?.name;
+
   const [data, setData] = useState([]);
   const [instructores, setInstructores] = useState([]);
   const [ambientes, setAmbientes] = useState({});
@@ -25,86 +32,99 @@ const HorariosTable = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const getData = async () => {
-      try {
-        const horariosData = await fetchHorarios();
+  const getData = async () => {
+    try {
+      setLoading(true);
 
-        const ambientesData = await fetchAmbientes();
+      // Obtener datos comunes
+      const ambientesData = await fetchAmbientes();
 
-        // Obtener datos de vinculaciones y personas
-        const vinculacionResponse = await fetch(
-          "http://localhost:3000/api/vinculacion"
+      let horariosData = [];
+      if (userRole === "Instructor") {
+        // Consulta personalizada para el rol Instructor
+        const horariosResponse = await fetch(
+          `http://localhost:3000/api/horarios/instructor?name=${encodeURIComponent(userName)}`
         );
-        if (!vinculacionResponse.ok)
-          throw new Error("Error al obtener vinculaciones");
-        const vinculacionResult = await vinculacionResponse.json();
-
-        const personasResponse = await fetch(
-          "http://localhost:3000/api/personas"
-        );
-        if (!personasResponse.ok) throw new Error("Error al obtener personas");
-        const personasResult = await personasResponse.json();
-
-        // Crear un mapa de personas por id_persona
-        const personasMap = new Map(
-          personasResult.data.map((persona) => [
-            persona.id_persona,
-            persona.nombres,
-          ])
-        );
-
-        // Mapear vinculaciones con nombres de personas
-        const instructoresConNombre = vinculacionResult.data.map(
-          (vinculacion) => ({
-            id_vinculacion: vinculacion.id_vinculacion,
-            nombre:
-              personasMap.get(vinculacion.instructor) || "Nombre no disponible",
-          })
-        );
-
-        // Crear un mapa de ambientes por id_ambiente
-        const ambientesMap = ambientesData.reduce((acc, ambiente) => {
-          acc[ambiente.id_ambiente] = ambiente.nombre_amb;
-          return acc;
-        }, {});
-
-        // Combinar datos de horarios con nombres de instructores
-        const updatedData = horariosData.map((horario) => {
-          const instructor = instructoresConNombre.find(
-            (inst) => inst.id_vinculacion === horario.instructor
-          );
-          const instructorNombre = instructor
-            ? instructor.nombre
-            : "Desconocido";
-
-          return {
-            id_horario: horario.id_horario,
-            fecha_inicio: horario.fecha_inicio,
-            hora_inicio: horario.hora_inicio,
-            fecha_fin: horario.fecha_fin,
-            hora_fin: horario.hora_fin,
-            dia: horario.dia,
-            cantidad_horas: horario.cantidad_horas,
-            instructor: instructorNombre,
-            ficha: horario.ficha,
-            ambiente: ambientesMap[horario.ambiente] || "Desconocido",
-            estado: horario.estado,
-          };
-        });
-
-        setData(updatedData);
-        setInstructores(instructoresConNombre);
-        setAmbientes(ambientesMap);
-      } catch (error) {
-        setError(error.message);
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
+        if (!horariosResponse.ok) throw new Error("Error al obtener horarios");
+        horariosData = await horariosResponse.json();
+      } else {
+        // Obtener todos los horarios para Coordinador y Líder
+        horariosData = await fetchHorarios();
       }
-    };
 
-    getData();
-  }, []);
+      const vinculacionResponse = await fetch(
+        "http://localhost:3000/api/vinculacion"
+      );
+      if (!vinculacionResponse.ok) throw new Error("Error al obtener vinculaciones");
+      const vinculacionResult = await vinculacionResponse.json();
+
+      const personasResponse = await fetch(
+        "http://localhost:3000/api/personas"
+      );
+      if (!personasResponse.ok) throw new Error("Error al obtener personas");
+      const personasResult = await personasResponse.json();
+
+      // Crear un mapa de personas por id_persona
+      const personasMap = new Map(
+        personasResult.data.map((persona) => [
+          persona.id_persona,
+          persona.nombres,
+        ])
+      );
+
+      // Mapear vinculaciones con nombres de personas
+      const instructoresConNombre = vinculacionResult.data.map(
+        (vinculacion) => ({
+          id_vinculacion: vinculacion.id_vinculacion,
+          nombre:
+            personasMap.get(vinculacion.instructor) || "Nombre no disponible",
+        })
+      );
+
+      // Crear un mapa de ambientes por id_ambiente
+      const ambientesMap = ambientesData.reduce((acc, ambiente) => {
+        acc[ambiente.id_ambiente] = ambiente.nombre_amb;
+        return acc;
+      }, {});
+
+      // Combinar datos de horarios con nombres de instructores
+      const updatedData = horariosData.map((horario) => {
+        const instructor = instructoresConNombre.find(
+          (inst) => inst.id_vinculacion === horario.instructor
+        );
+        const instructorNombre = instructor
+          ? instructor.nombre
+          : "Desconocido";
+
+        return {
+          id_horario: horario.id_horario,
+          fecha_inicio: horario.fecha_inicio,
+          hora_inicio: horario.hora_inicio,
+          fecha_fin: horario.fecha_fin,
+          hora_fin: horario.hora_fin,
+          dia: horario.dia,
+          cantidad_horas: horario.cantidad_horas,
+          instructor: instructorNombre,
+          ficha: horario.ficha,
+          ambiente: ambientesMap[horario.ambiente] || "Desconocido",
+          estado: horario.estado,
+        };
+      });
+
+      setData(updatedData);
+      setInstructores(instructoresConNombre);
+      setAmbientes(ambientesMap);
+    } catch (error) {
+      setError(error.message);
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  getData();
+}, [userRole, userName]);
+
 
   const handleEstadoChange = async (id, newEstado) => {
     try {

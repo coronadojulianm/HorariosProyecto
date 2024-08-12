@@ -2,7 +2,6 @@ import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from 'bcrypt';
-import { signIn } from "next-auth/react";
 
 const authOptions = {
     providers: [
@@ -43,15 +42,29 @@ const authOptions = {
                     id: userFound.identificacion,
                     name: userFound.nombres,
                     email: userFound.correo,
+                    role: userFound.rol,  // Asumiendo que tienes un campo 'role' en tu base de datos
                 };
             },
         }),
     ],
     pages:{
         signIn:"/auth/login"
+    },
+    callbacks: {
+        async session({ session, token, user }) {
+            session.user.role = token.role;
+            return session;
+        },
+        async jwt({ token, user }) {
+            if (user) {
+                token.role = user.role;
+            }
+            return token;
+        },
     }
 };
 
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
+
 
