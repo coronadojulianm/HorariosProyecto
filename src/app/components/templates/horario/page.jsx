@@ -1,32 +1,28 @@
 "use client";
 
-import Sidebar from "../../organisms/Sidebar"; // Ajusta la ruta según la estructura de carpetas
-import HorariosTable from "../../pages/horariostable/horariosTable"; // Ajusta la ruta según la estructura de carpetas
-import ModalRegHorario from "../../organisms/modals/horario/RegistrarHorario";
-import { Button, Link } from "@nextui-org/react";
+import Sidebar from "../../organisms/Sidebar";
+import CalendarioTable from "../../pages/horariostable/horariosTable";
+import ModalRegistrarHorario from '../../organisms/modals/horario/RegistrarHorario';
+import { useSession } from "next-auth/react";
 
+export default function HorarioTemplate() {
+  const { data: session } = useSession();
 
-export default function HorariosTemplate() {
   return (
     <div className="flex">
       <Sidebar />
       <main className="flex-1 h-[calc(100vh-7rem)] flex flex-col p-4">
         <div>
-          <h1 className="text-black text-5xl mb-10 mt-7">Horarios</h1>
-          <div className="mb-10">
-            <ModalRegHorario />
-            <Link href="/components/templates/calendario">
-            <Button 
-            className="bg-lime-500 text-white ml-5" 
-            >
-              Calendario
-            </Button>
-            </Link>
-            
+          <h1 className="text-black text-5xl mb-5 mt-7">Tabla Horario</h1>
+          <div className="mb-4">
+            {session?.user?.role && (session.user.role === 'Coordinador' || session.user.role === 'Lider') && (
+              <ModalRegistrarHorario />
+            )}
           </div>
-          <HorariosTable />
+          <CalendarioTable />
         </div>
       </main>
     </div>
   );
 }
+

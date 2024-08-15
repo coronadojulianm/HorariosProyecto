@@ -1,370 +1,297 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import MUIDataTable from "mui-datatables";
-import {
-  fetchHorarios,
-  fetchAmbientes,
-  fetchPersonas,
-} from "../../../../lib/fetch"; // Ajusta la ruta si es necesario
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Button,
-} from "@nextui-org/react";
-import Swal from "sweetalert2";
-import ActualizarHorario from "../../organisms/modals/horario/ActualizarHorario"; // Ajusta la ruta si es necesario
-import { useSession } from "next-auth/react";
+import { Typography } from '@mui/material';
+import { useSession } from 'next-auth/react';
+import { FaEdit, FaCheck, FaTimes, FaTrash } from 'react-icons/fa'; // Importar el icono de eliminar
+import Swal from 'sweetalert2';
+import ModalActualizarHorario from '../../organisms/modals/horario/ActualizarHorario';
 
-
-const HorariosTable = () => {
-
-    const { data: session } = useSession();
-  const userRole = session?.user?.role;
-  const userName = session?.user?.name;
-
+const CalendarioTable = () => {
   const [data, setData] = useState([]);
-  const [instructores, setInstructores] = useState([]);
-  const [ambientes, setAmbientes] = useState({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedHorario, setSelectedHorario] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { data: session } = useSession();
 
   useEffect(() => {
-  const getData = async () => {
-    try {
-      setLoading(true);
+    fetchData();
+  }, [session]);
 
-      // Obtener datos comunes
-      const ambientesData = await fetchAmbientes();
-
-      let horariosData = [];
-      if (userRole === "Instructor") {
-        // Consulta personalizada para el rol Instructor
-        const horariosResponse = await fetch(
-          `http://localhost:3000/api/horarios/instructor?name=${encodeURIComponent(userName)}`
-        );
-        if (!horariosResponse.ok) throw new Error("Error al obtener horarios");
-        horariosData = await horariosResponse.json();
-      } else {
-        // Obtener todos los horarios para Coordinador y Líder
-        horariosData = await fetchHorarios();
+  const fetchData = () => {
+    if (session) {
+      const url = new URL('http://localhost:3000/api/horarios/calendario');
+      url.searchParams.append('role', session.user.role);
+  
+      // Agregar parámetro nombres si es necesario
+      if (session.user.role === 'Instructor' || session.user.role === 'Lider') {
+        if (session.user.name) {
+          url.searchParams.append('nombres', session.user.name);
+        } else {
+          console.error('Nombre del usuario no disponible en la sesión');
+          return;
+        }
       }
+  
+      fetch(url.toString())
+        .then(response => response.json())
+        .then(data => {
+          // Manejo de datos aquí
+          const formattedData = data.reduce((acc, item) => {
+            const instructor = acc.find(i => i.instructor === item.instructor);
+            const horarioData = formatHorario(item);
 
-      const vinculacionResponse = await fetch(
-        "http://localhost:3000/api/vinculacion"
-      );
-      if (!vinculacionResponse.ok) throw new Error("Error al obtener vinculaciones");
-      const vinculacionResult = await vinculacionResponse.json();
+            if (instructor) {
+              if (!instructor[item.dia_semana]) {
+                instructor[item.dia_semana] = [];
+              }
+              if (horarioData) {
+                instructor[item.dia_semana].push(horarioData);
+              }
+            } else {
+              const newEntry = {
+                instructor: item.instructor,
+                areas: item.area,
+                lunes: [],
+                martes: [],
+                miercoles: [],
+                jueves: [],
+                viernes: [],
+                sabado: [],
+                domingo: []
+              };
+              if (horarioData) {
+                newEntry[item.dia_semana] = [horarioData];
+              } else {
+                newEntry[item.dia_semana] = 'Día sin horario';
+              }
+              acc.push(newEntry);
+            }
+            return acc;
+          }, []);
 
-      const personasResponse = await fetch(
-        "http://localhost:3000/api/personas"
-      );
-      if (!personasResponse.ok) throw new Error("Error al obtener personas");
-      const personasResult = await personasResponse.json();
+          const finalizedData = formattedData.map(row => {
+            const updatedRow = { ...row };
+            const daysOfWeek = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            daysOfWeek.forEach(day => {
+              if (!updatedRow[day] || updatedRow[day] === null || (Array.isArray(updatedRow[day]) && updatedRow[day].length === 0)) {
+                updatedRow[day] = 'Día sin horario';
+              }
+            });
+            return updatedRow;
+          });
 
-      // Crear un mapa de personas por id_persona
-      const personasMap = new Map(
-        personasResult.data.map((persona) => [
-          persona.id_persona,
-          persona.nombres,
-        ])
-      );
-
-      // Mapear vinculaciones con nombres de personas
-      const instructoresConNombre = vinculacionResult.data.map(
-        (vinculacion) => ({
-          id_vinculacion: vinculacion.id_vinculacion,
-          nombre:
-            personasMap.get(vinculacion.instructor) || "Nombre no disponible",
+          setData(finalizedData);
         })
-      );
-
-      // Crear un mapa de ambientes por id_ambiente
-      const ambientesMap = ambientesData.reduce((acc, ambiente) => {
-        acc[ambiente.id_ambiente] = ambiente.nombre_amb;
-        return acc;
-      }, {});
-
-      // Combinar datos de horarios con nombres de instructores
-      const updatedData = horariosData.map((horario) => {
-        const instructor = instructoresConNombre.find(
-          (inst) => inst.id_vinculacion === horario.instructor
-        );
-        const instructorNombre = instructor
-          ? instructor.nombre
-          : "Desconocido";
-
-        return {
-          id_horario: horario.id_horario,
-          fecha_inicio: horario.fecha_inicio,
-          hora_inicio: horario.hora_inicio,
-          fecha_fin: horario.fecha_fin,
-          hora_fin: horario.hora_fin,
-          dia: horario.dia,
-          cantidad_horas: horario.cantidad_horas,
-          instructor: instructorNombre,
-          ficha: horario.ficha,
-          ambiente: ambientesMap[horario.ambiente] || "Desconocido",
-          estado: horario.estado,
-        };
-      });
-
-      setData(updatedData);
-      setInstructores(instructoresConNombre);
-      setAmbientes(ambientesMap);
-    } catch (error) {
-      setError(error.message);
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+        .catch(error => console.error('Error fetching data:', error));
     }
   };
 
-  getData();
-}, [userRole, userName]);
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
-
-  const handleEstadoChange = async (id, newEstado) => {
-    try {
-      const response = await fetch(`http://localhost:3000/api/horarios/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ estado: newEstado }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al actualizar el estado");
-      }
-
-      setData((prevData) =>
-        prevData.map((horario) =>
-          horario.id_horario === id
-            ? { ...horario, estado: newEstado }
-            : horario
-        )
-      );
-
-      await Swal.fire({
-        icon: "success",
-        title: "Actualizado",
-        text: "Estado actualizado correctamente",
-      });
-    } catch (error) {
-      console.error("Error al actualizar estado:", error);
-
-      await Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo actualizar el estado",
-      });
+  const formatHorario = (item) => {
+    if (item.hora_inicio && item.hora_fin) {
+      return {
+        id: item.id,
+        fechaInicio: item.fecha_inicio ? formatDate(item.fecha_inicio) : 'N/A',
+        fechaFin: item.fecha_fin ? formatDate(item.fecha_fin) : 'N/A',
+        horaInicio: item.hora_inicio,
+        horaFin: item.hora_fin,
+        estado: item.estado_horario || 'N/A'
+      };
+    } else {
+      return null;
     }
   };
 
-  const handleDelete = (id_horario) => {
+  const getEstadoColor = (estado) => {
+    switch (estado) {
+      case 'solicitud':
+        return 'orange';
+      case 'aprobado':
+        return 'green';
+      case 'no_aprobado':
+        return 'red';
+      default:
+        return 'black';
+    }
+  };
+
+  const confirmChange = (id, newState) => {
+    const actionText = newState === 'aprobado' ? 'aprobar' : 'rechazar';
     Swal.fire({
-      title: "¿Estás seguro?",
-      text: "Esta acción eliminará el horario permanentemente.",
-      icon: "warning",
+      title: `¿Estás seguro de que deseas ${actionText} este horario?`,
+      text: "No podrás deshacer esta acción",
+      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: "#84CC16",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: `Sí, ${actionText}`,
+      cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        fetch(`http://localhost:3000/api/horarios/${id_horario}`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        })
-          .then((response) => {
-            if (response.ok) {
-              Swal.fire(
-                "Eliminado",
-                "El horario ha sido eliminado con éxito",
-                "success"
-              );
-              setData((prevData) =>
-                prevData.filter((item) => item.id_horario !== id_horario)
-              );
-            } else {
-              Swal.fire("Error", "No se pudo eliminar el horario", "error");
-            }
-          })
-          .catch((error) => {
-            Swal.fire("Error", error.message, "error");
-          });
+        handleStateChange(id, newState);
       }
     });
   };
 
-  const handleUpdate = (updatedData) => {
-    fetch(`http://localhost:3000/api/horarios/${selectedHorario.id_horario}`, {
-      method: "PUT",
+  const handleStateChange = (id, newState) => {
+    fetch(`http://localhost:3000/api/horarios/${id}`, {
+      method: 'PUT',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updatedData),
+      body: JSON.stringify({ estado: newState }),
     })
+    .then(response => response.json())
+    .then(() => {
+      fetchData();
+    })
+    .catch(error => console.error('Error updating state:', error));
   };
 
-  const getButtonClass = (estado) => {
-    switch (estado) {
-      case "aprobado":
-        return "bg-lime-500 text-white";
-      case "solicitud":
-        return "bg-gray-500 text-white";
-      case "no_aprobado":
-        return "bg-red-500 text-white";
-      default:
-        return "bg-gray-500 text-white";
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: '¿Estás seguro de que deseas eliminar este horario?',
+      text: "No podrás deshacer esta acción",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        fetch(`http://localhost:3000/api/horarios/${id}`, {
+          method: 'DELETE',
+        })
+        .then(response => {
+          if (response.ok) {
+            Swal.fire('Eliminado', 'El horario ha sido eliminado', 'success');
+            fetchData();
+          } else {
+            Swal.fire('Error', 'No se pudo eliminar el horario', 'error');
+          }
+        })
+        .catch(error => console.error('Error deleting horario:', error));
+      }
+    });
+  };
+
+  const openEditModal = (horario) => {
+    setSelectedHorario(horario);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedHorario(null);
+  };
+
+  const renderCell = (value) => {
+    if (value === 'Día sin horario') {
+      return <Typography style={{ fontSize: '0.75rem' }}>{value}</Typography>;
     }
+    
+    const horarios = Array.isArray(value) ? value : [value];
+  
+    return (
+      <>
+        {horarios.map((item, index) => (
+          <div key={index}>
+            <Typography style={{ fontSize: '0.75rem' }}>Fecha inicio: {item.fechaInicio}</Typography>
+            <Typography style={{ fontSize: '0.75rem' }}>Fecha Fin: {item.fechaFin}</Typography>
+            <Typography style={{ fontSize: '0.75rem' }}>Hora inicio: {item.horaInicio}</Typography>
+            <Typography style={{ fontSize: '0.75rem' }}>Hora Fin: {item.horaFin}</Typography>
+            <Typography style={{ fontSize: '0.75rem', color: getEstadoColor(item.estado) }}>Estado: {item.estado}</Typography>
+            {session.user.role === 'Coordinador' && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <FaEdit style={{ cursor: 'pointer' }} title="Actualizar" onClick={() => openEditModal(item)} />
+                {item.estado === 'solicitud' && (
+                  <>
+                    <FaTimes
+                      style={{ cursor: 'pointer', color: 'red' }}
+                      title="Rechazar"
+                      onClick={() => confirmChange(item.id, 'no_aprobado')}
+                    />
+                    <FaCheck
+                      style={{ cursor: 'pointer', color: 'green' }}
+                      title="Aprobar"
+                      onClick={() => confirmChange(item.id, 'aprobado')}
+                    />
+                  </>
+                )}
+                <FaTrash
+                  style={{ cursor: 'pointer', color: 'gray' }}
+                  title="Eliminar"
+                  onClick={() => handleDelete(item.id)}
+                />
+              </div>
+            )}
+            <br />
+          </div>
+        ))}
+      </>
+    );
   };
-
+  
   const columns = [
-    { name: "id_horario", label: "ID Horario" },
-    {
-      name: "instructor",
-      label: "Instructor",
-      options: {
-        customBodyRender: (value) => {
-          // Mostrar nombre del instructor
-          return value;
-        },
-      },
-    },
-    { name: "ficha", label: "Ficha" },
-    { name: "ambiente", label: "Ambiente" },
-    { name: "dia", label: "Día" },
-    { name: "cantidad_horas", label: "Cantidad Horas" },
-    {
-      name: "fecha_inicio",
-      label: "Fecha Inicio",
-      options: {
-        customBodyRender: (value) => {
-          // Extraer solo la fecha del string
-          const date = new Date(value).toISOString().substr(0, 10);
-          return date;
-        },
-      },
-    },
-    {
-      name: "hora_inicio",
-      label: "Hora Inicio",
-      options: {
-        customBodyRender: (value) => {
-          // Extraer solo la hora del string
-          const time = new Date(value).toISOString().substr(11, 8);
-          return time;
-        },
-      },
-    },
-    {
-      name: "fecha_fin",
-      label: "Fecha Fin",
-      options: {
-        customBodyRender: (value) => {
-          // Extraer solo la fecha del string
-          const date = new Date(value).toISOString().substr(0, 10);
-          return date;
-        },
-      },
-    },
-    {
-      name: "hora_fin",
-      label: "Hora Fin",
-      options: {
-        customBodyRender: (value) => {
-          // Extraer solo la hora del string
-          const time = new Date(value).toISOString().substr(11, 8);
-          return time;
-        },
-      },
-    },
-    {
-      name: "estado",
-      label: "Estado",
-      options: {
-        customBodyRender: (value, tableMeta) => {
-          const horario = data[tableMeta.rowIndex];
-          return (
-            <Dropdown>
-              <DropdownTrigger className={getButtonClass(horario.estado)}>
-                <Button>{horario.estado}</Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label="Cambiar estado"
-                onAction={(key) => handleEstadoChange(horario.id_horario, key)}
-              >
-                <DropdownItem key="solicitud">Solicitud</DropdownItem>
-                <DropdownItem key="aprobado">Aprobado</DropdownItem>
-                <DropdownItem key="no_aprobado">No Aprobado</DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          );
-        },
-      },
-    },
-    {
-      name: "actions",
-      label: "Acciones",
-      options: {
-        filter: false,
-        sort: false,
-        customBodyRender: (value, tableMeta) => {
-          const horario = data[tableMeta.rowIndex];
-          return (
-            <div>
-              <Button
-                className="bg-lime-500 text-white mr-2"
-                onClick={() => {
-                  setSelectedHorario(horario);
-                  setModalOpen(true);
-                }}
-              >
-                Editar
-              </Button>
-              <Button
-                className="bg-red-500 text-white"
-                onClick={() => handleDelete(horario.id_horario)}
-              >
-                Eliminar
-              </Button>
-            </div>
-          );
-        },
-      },
-    },
+    { name: "instructor", label: "Instructor" },
+    { name: "areas", label: "Áreas" },
+    { name: "lunes", label: "Lunes", options: { customBodyRender: renderCell }},
+    { name: "martes", label: "Martes", options: { customBodyRender: renderCell }},
+    { name: "miercoles", label: "Miércoles", options: { customBodyRender: renderCell }},
+    { name: "jueves", label: "Jueves", options: { customBodyRender: renderCell }},
+    { name: "viernes", label: "Viernes", options: { customBodyRender: renderCell }},
+    { name: "sabado", label: "Sábado", options: { customBodyRender: renderCell }},
+    { name: "domingo", label: "Domingo", options: { customBodyRender: renderCell }},
   ];
 
   const options = {
-    filterType: "checkbox",
-    scroll: "vertical",
+    filterType: 'checkbox',
+    responsive: 'standard',
+    selectableRows: 'none',
   };
 
   return (
     <>
       <MUIDataTable
-        title={"Horarios"}
+        title={"Calendario de Horarios"}
         data={data}
         columns={columns}
         options={options}
       />
-      {selectedHorario && (
-        <ActualizarHorario
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
+      {isModalOpen && (
+        <ModalActualizarHorario
+          isOpen={isModalOpen}
+          onClose={closeModal}
           horario={selectedHorario}
-          onUpdate={handleUpdate}
         />
       )}
     </>
   );
 };
 
-export default HorariosTable;
+export default CalendarioTable; 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

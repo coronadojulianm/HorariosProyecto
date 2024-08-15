@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   ModalContent,
@@ -10,125 +10,54 @@ import {
   Select,
   SelectItem,
 } from "@nextui-org/react";
-import Swal from "sweetalert2";
+import Swal from 'sweetalert2';
 
-export default function ActualizarHorario({
-  isOpen,
-  onClose,
-  horario,
-  onUpdate,
-}) {
+const ModalActualizarHorario = ({ isOpen, onClose, horario }) => {
   const [formData, setFormData] = useState({
-    fecha_inicio: "",
-    hora_inicio: "",
-    fecha_fin: "",
-    hora_fin: "",
-    dia: "",
-    cantidad_horas: "",
-    instructor: "",
-    ficha: "",
-    ambiente: "",
-    estado: "",
+    fechaInicio: '',
+    fechaFin: '',
+    horaInicio: '',
+    horaFin: '',
+    ambiente: '',
+    ficha: '',
   });
 
-  const [instructores, setInstructores] = useState([]);
   const [fichas, setFichas] = useState([]);
   const [ambientes, setAmbientes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchInstructores();
-      fetchFichas();
-      fetchAmbientes();
+    if (horario) {
+      console.log("Horario recibido:", horario); // Verifica que `horario` tenga la propiedad correcta
       setFormData({
-        fecha_inicio: horario.fecha_inicio,
-        hora_inicio: horario.hora_inicio,
-        fecha_fin: horario.fecha_fin,
-        hora_fin: horario.hora_fin,
-        dia: horario.dia,
-        cantidad_horas: horario.cantidad_horas,
-        instructor: horario.instructor,
-        ficha: horario.ficha,
-        ambiente: horario.ambiente,
-        estado: horario.estado,
+        fechaInicio: horario.fechaInicio || '',
+        fechaFin: horario.fechaFin || '',
+        horaInicio: horario.horaInicio || '',
+        horaFin: horario.horaFin || '',
+        ambiente: horario.ambiente || '',
+        ficha: horario.ficha || '',
       });
     }
-  }, [isOpen, horario]);
+  }, [horario]);
 
-  const fetchInstructores = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const vinculacionResponse = await fetch(
-        "http://localhost:3000/api/vinculacion"
-      );
-      if (!vinculacionResponse.ok)
-        throw new Error("Error al obtener vinculaciones");
-      const vinculacionResult = await vinculacionResponse.json();
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [fichaRes, ambienteRes] = await Promise.all([
+          fetch("http://localhost:3000/api/fichas"),
+          fetch("http://localhost:3000/api/ambientes"),
+        ]);
+        const fichaData = await fichaRes.json();
+        const ambienteData = await ambienteRes.json();
 
-      const personasResponse = await fetch(
-        "http://localhost:3000/api/personas"
-      );
-      if (!personasResponse.ok) throw new Error("Error al obtener personas");
-      const personasResult = await personasResponse.json();
+        setFichas(fichaData.data);
+        setAmbientes(ambienteData.data);
+      } catch (error) {
+        console.error("Error al cargar los datos", error);
+      }
+    };
 
-      const personasMap = new Map(
-        personasResult.data.map((persona) => [
-          persona.id_persona,
-          persona.nombres,
-        ])
-      );
-
-      const instructoresConNombre = vinculacionResult.data.map(
-        (vinculacion) => ({
-          id_vinculacion: vinculacion.id_vinculacion,
-          nombre:
-            personasMap.get(vinculacion.instructor) || "Nombre no disponible",
-        })
-      );
-
-      setInstructores(instructoresConNombre);
-    } catch (error) {
-      setError(error.message);
-      console.error("Error al cargar instructores:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchFichas = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch("http://localhost:3000/api/fichas");
-      if (!response.ok) throw new Error("Error al obtener fichas");
-      const result = await response.json();
-      setFichas(result.data || []);
-    } catch (error) {
-      setError(error.message);
-      console.error("Error al cargar fichas:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAmbientes = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch("http://localhost:3000/api/ambientes");
-      if (!response.ok) throw new Error("Error al obtener ambientes");
-      const result = await response.json();
-      setAmbientes(result.data || []);
-    } catch (error) {
-      setError(error.message);
-      console.error("Error al cargar ambientes:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchData();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -138,233 +67,182 @@ export default function ActualizarHorario({
     });
   };
 
-  const handleSelectChange = (name, value) => {
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+  // Función para generar una hora aleatoria en formato HH:MM
+  const generateRandomTime = () => {
+    const hours = String(Math.floor(Math.random() * 24)).padStart(2, '0');
+    const minutes = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
-  const validateForm = () => {
-    return (
-      formData.fecha_inicio &&
-      formData.hora_inicio &&
-      formData.fecha_fin &&
-      formData.hora_fin &&
-      formData.dia &&
-      formData.cantidad_horas &&
-      formData.instructor &&
-      formData.ficha &&
-      formData.ambiente &&
-      formData.estado
-    );
-  };
+  const handleSave = async () => {
+    if (!horario || !horario.id) {
+      console.error("No se ha proporcionado un ID de horario para actualizar.");
+      return;
+    }
 
-  const handleUpdate = async () => {
-    try {
-      if (!validateForm()) {
-        await Swal.fire({
-          title: "Campos Vacíos",
-          text: "Por favor, complete todos los campos.",
-          icon: "warning",
-          confirmButtonText: "OK",
-        });
-        return;
-      }
-  
-      const fechaArbitrariaHora = "1970-01-01";
-      const horaArbitrariaFecha = "00:00:00";
-  
-      const horaInicio = formData.hora_inicio || "00:00:00";
-      const horaFin = formData.hora_fin || "23:59:59";
-  
-      const fechaInicio = formData.fecha_inicio
-        ? `${formData.fecha_inicio}T${horaArbitrariaFecha}Z`
-        : null;
-      const fechaFin = formData.fecha_fin
-        ? `${formData.fecha_fin}T${horaArbitrariaFecha}Z`
-        : null;
-  
-      const updatedFormData = {
-        id_horario: horario.id_horario,
-        fecha_inicio: fechaInicio,
-        hora_inicio: `${fechaArbitrariaHora}T${horaInicio}:00Z`,
-        fecha_fin: fechaFin,
-        hora_fin: `${fechaArbitrariaHora}T${horaFin}:00Z`,
-        dia: formData.dia,
-        cantidad_horas: parseInt(formData.cantidad_horas, 10),
-        instructor: parseInt(formData.instructor, 10),
-        ficha: parseInt(formData.ficha, 10),
-        ambiente: parseInt(formData.ambiente, 10),
-        estado: formData.estado,
-      };
-  
-      const response = await fetch(
-        `http://localhost:3000/api/horarios/${horario.id_horario}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updatedFormData),
-        }
-      );
-  
-      if (!response.ok) throw new Error("Error al actualizar el horario");
-  
-      await Swal.fire({
-        title: "Éxito",
-        text: "El horario se actualizó correctamente.",
-        icon: "success",
-        confirmButtonText: "OK",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          onUpdate(updatedFormData);
-          onClose();
-          window.location.reload();  // Refresca la página después de la actualización exitosa
-        }
-      });
-    } catch (error) {
-      console.error("Error al actualizar el horario:", error);
+    // Validar que todos los campos estén completos
+    const { fechaInicio, fechaFin, horaInicio, horaFin, ambiente, ficha } = formData;
+    if (!fechaInicio || !fechaFin || !horaInicio || !horaFin || !ambiente || !ficha) {
       Swal.fire({
-        title: "Error",
-        text: "Hubo un problema al actualizar el horario.",
-        icon: "error",
-        confirmButtonText: "OK",
+        icon: 'warning',
+        title: 'Campos incompletos',
+        text: 'Por favor, complete todos los campos antes de guardar.',
+        showConfirmButton: true
+      });
+      return;
+    }
+
+    const randomTime = generateRandomTime();
+    const formatDateTime = (dateStr) => {
+      return `${dateStr}T${randomTime}:00.000Z`;
+    };
+
+    const updatedData = {
+      fecha_inicio: formatDateTime(fechaInicio),
+      hora_inicio: horaInicio,
+      fecha_fin: formatDateTime(fechaFin),
+      hora_fin: horaFin,
+      ambiente: parseInt(ambiente, 10), // Convierte a entero
+      ficha: parseInt(ficha, 10), // Convierte a entero
+    };
+
+    console.log("Datos a enviar:", updatedData);
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/horarios/${horario.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      const responseText = await response.text();
+
+      if (response.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Horario actualizado con éxito',
+          showConfirmButton: false,
+          timer: 1500
+        });
+        onClose();
+        window.location.reload(); // Refresca la página después de guardar
+      } else {
+        console.error("Error al actualizar el horario:", responseText);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al actualizar el horario',
+          text: responseText,
+          showConfirmButton: true
+        });
+      }
+    } catch (error) {
+      console.error("Error al conectar con el servidor", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al conectar con el servidor',
+        text: error.message,
+        showConfirmButton: true
       });
     }
   };
-  
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onOpenChange={onClose}>
       <ModalContent>
-        <ModalHeader>Actualizar Horario</ModalHeader>
-        <ModalBody>
-          <Input
-            name="fecha_inicio"
-            type="date"
-            value={formData.fecha_inicio}
-            onChange={handleChange}
-            placeholder="Fecha de Inicio"
-            label="Fecha de Inicio"
-          />
-          <Input
-            name="hora_inicio"
-            type="time"
-            value={formData.hora_inicio}
-            onChange={handleChange}
-            placeholder="Hora de Inicio"
-            label="Hora de Inicio"
-          />
-          <Input
-            name="fecha_fin"
-            type="date"
-            value={formData.fecha_fin}
-            onChange={handleChange}
-            placeholder="Fecha de Fin"
-            label="Fecha de Fin"
-          />
-          <Input
-            name="hora_fin"
-            type="time"
-            value={formData.hora_fin}
-            onChange={handleChange}
-            placeholder="Hora de Fin"
-            label="Hora de Fin"
-          />
-          <Select
-            label="Día"
-            name="dia"
-            value={formData.dia}
-            onChange={(e) => handleSelectChange("dia", e.target.value)}
-          >
-            <SelectItem key="lunes" value="lunes">
-              Lunes
-            </SelectItem>
-            <SelectItem key="martes" value="martes">
-              Martes
-            </SelectItem>
-            <SelectItem key="miercoles" value="miercoles">
-              Miércoles
-            </SelectItem>
-            <SelectItem key="jueves" value="jueves">
-              Jueves
-            </SelectItem>
-            <SelectItem key="viernes" value="viernes">
-              Viernes
-            </SelectItem>
-            <SelectItem key="sabado" value="sabado">
-              Sábado
-            </SelectItem>
-            <SelectItem key="domingo" value="domingo">
-              Domingo
-            </SelectItem>
-          </Select>
-          <Input
-            name="cantidad_horas"
-            type="number"
-            value={formData.cantidad_horas}
-            onChange={handleChange}
-            placeholder="Cantidad de Horas"
-            label="Cantidad de Horas"
-          />
-          <Select
-            label="Instructor"
-            name="instructor"
-            value={formData.instructor}
-            onChange={(e) => handleSelectChange("instructor", e.target.value)}
-          >
-            {instructores.map((instructor) => (
-              <SelectItem
-                key={instructor.id_vinculacion}
-                value={instructor.id_vinculacion}
-              >
-                {instructor.nombre}
-              </SelectItem>
-            ))}
-          </Select>
-          <Input
-            name="ficha"
-            type="number"
-            value={formData.ficha}
-            onChange={handleChange}
-            placeholder="Ficha"
-            label="Ficha"
-          />
-          <Select
-            label="Ambiente"
-            name="ambiente"
-            value={formData.ambiente}
-            onChange={(e) => handleSelectChange("ambiente", e.target.value)}
-          >
-            {loading ? (
-              <SelectItem value="">Cargando ambientes...</SelectItem>
-            ) : error ? (
-              <SelectItem value="">Error al cargar ambientes</SelectItem>
-            ) : ambientes.length > 0 ? (
-              ambientes.map((ambiente) => (
+        <>
+          <ModalHeader className="flex flex-col gap-1">Editar Horario</ModalHeader>
+          <ModalBody>
+            <Input
+              label="Fecha Inicio"
+              name="fechaInicio"
+              type="date"
+              value={formData.fechaInicio}
+              onChange={handleChange}
+              fullWidth
+            />
+            <Input
+              label="Fecha Fin"
+              name="fechaFin"
+              type="date"
+              value={formData.fechaFin}
+              onChange={handleChange}
+              fullWidth
+            />
+            <Input
+              label="Hora Inicio"
+              name="horaInicio"
+              type="time"
+              value={formData.horaInicio}
+              onChange={handleChange}
+              fullWidth
+            />
+            <Input
+              label="Hora Fin"
+              name="horaFin"
+              type="time"
+              value={formData.horaFin}
+              onChange={handleChange}
+              fullWidth
+            />
+            <Select
+              label="Ambiente"
+              name="ambiente"
+              value={formData.ambiente}
+              onChange={handleChange}
+            >
+              {ambientes.map((ambiente) => (
                 <SelectItem
                   key={ambiente.id_ambiente}
-                  value={ambiente.id_ambiente.toString()}
+                  value={ambiente.id_ambiente}
+                  textValue={ambiente.nombre_amb}
                 >
                   {ambiente.nombre_amb}
                 </SelectItem>
-              ))
-            ) : (
-              <SelectItem value="">No hay ambientes disponibles</SelectItem>
-            )}
-          </Select>
-          
-        </ModalBody>
-        <ModalFooter>
-          <Button color="danger" variant="light" onClick={onClose}>
-            Cerrar
-          </Button>
-          <Button className="bg-lime-500 text-white" auto onClick={handleUpdate} disabled={loading}>
-            {loading ? "Cargando..." : "Actualizar"}
-          </Button>
-        </ModalFooter>
+              ))}
+            </Select>
+            <Select
+              label="Ficha"
+              name="ficha"
+              value={formData.ficha}
+              onChange={handleChange}
+            >
+              {fichas.map((ficha) => (
+                <SelectItem
+                  key={ficha.codigo}
+                  value={ficha.codigo}
+                  textValue={ficha.codigo}
+                >
+                  {ficha.codigo}
+                </SelectItem>
+              ))}
+            </Select>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="danger" variant="light" onPress={onClose}>
+              Cerrar
+            </Button>
+            <Button color="primary" onPress={handleSave}>
+              Guardar
+            </Button>
+          </ModalFooter>
+        </>
       </ModalContent>
     </Modal>
   );
-}
+};
+
+export default ModalActualizarHorario;
+
+
+
+
+
+
+
+
+
+
+
+
