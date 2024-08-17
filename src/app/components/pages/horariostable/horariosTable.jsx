@@ -97,6 +97,8 @@ const CalendarioTable = () => {
     if (item.hora_inicio && item.hora_fin) {
       return {
         id: item.id,
+        ficha: item.ficha,
+        ambiente: item.ambiente,
         fechaInicio: item.fecha_inicio ? formatDate(item.fecha_inicio) : 'N/A',
         fechaFin: item.fecha_fin ? formatDate(item.fecha_fin) : 'N/A',
         horaInicio: item.hora_inicio,
@@ -203,6 +205,8 @@ const CalendarioTable = () => {
       <>
         {horarios.map((item, index) => (
           <div key={index}>
+            <Typography style={{ fontSize: '0.75rem' }}>ID Ficha: {item.ficha}</Typography>
+            <Typography style={{ fontSize: '0.75rem' }}>Ambiente: {item.ambiente}</Typography>
             <Typography style={{ fontSize: '0.75rem' }}>Fecha inicio: {item.fechaInicio}</Typography>
             <Typography style={{ fontSize: '0.75rem' }}>Fecha Fin: {item.fechaFin}</Typography>
             <Typography style={{ fontSize: '0.75rem' }}>Hora inicio: {item.horaInicio}</Typography>
