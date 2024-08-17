@@ -1,5 +1,5 @@
 import React from 'react'
-import { Navbar } from './components/organisms/navBar'
+import { Navbar } from './components/organisms/Navbar'
 
 export default function HomePage() {
   return (

@@ -10,9 +10,9 @@ generator client {
 model Horarios {
   id_horario     Int          @id @default(autoincrement())
   fecha_inicio   DateTime
-  hora_inicio    DateTime
+  hora_inicio    String       @db.VarChar(5) // Cambiado a String
   fecha_fin      DateTime
-  hora_fin       DateTime
+  hora_fin       String       @db.VarChar(5) // Cambiado a String
   dia            Dia
   cantidad_horas Int
   instructor     Int
@@ -23,6 +23,7 @@ model Horarios {
   Vinculacion    Vinculacion  @relation(fields: [instructor], references: [id_vinculacion])
   Ambientes      Ambientes    @relation(fields: [ambiente], references: [id_ambiente])
 }
+
 
 model Fichas {
   codigo         Int         @id
@@ -78,13 +79,17 @@ model Personas {
   municipio      Int
   Municipios     Municipios    @relation(fields: [municipio], references: [id_municipio])
   Vinculacion    Vinculacion[]
+  Areas          Areas[]
 }
 
 model Areas {
   id_area      Int             @id @default(autoincrement())
   nombre_area  String          @db.VarChar(80)
+  lider        Int             // Ahora el campo es obligatorio
   Vinculacion  Vinculacion[]
+  Personas     Personas        @relation(fields: [lider], references: [id_persona])
 }
+
 
 model Municipios {
   id_municipio Int             @id @default(autoincrement())
